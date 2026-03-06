@@ -85,3 +85,26 @@ def get_past_meeting_participants(meeting_id: str, max_retries: int = 3) -> list
 
     logger.info(f"Fetched {len(all_participants)} participant(s) for meeting {meeting_id}")
     return all_participants
+
+
+def get_zoom_user_display_name(user_id: str) -> str:
+    """
+    Fetch a Zoom user's display name (first_name + last_name) by user id.
+    Returns empty string if the API call fails or name fields are missing.
+    """
+    if not user_id or not user_id.strip():
+        return ""
+    try:
+        token = _get_access_token()
+        url = f"https://api.zoom.us/v2/users/{user_id}"
+        headers = {"Authorization": f"Bearer {token}"}
+        response = httpx.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        first = (data.get("first_name") or "").strip()
+        last = (data.get("last_name") or "").strip()
+        name = f"{first} {last}".strip()
+        return name if name else ""
+    except Exception as e:
+        logger.warning(f"Could not get Zoom user display name for {user_id}: {e}")
+        return ""

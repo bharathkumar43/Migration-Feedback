@@ -9,8 +9,9 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def _build_feedback_html(customer_email: str, mm_email: str, feedback_link: str) -> str:
-    """Build the HTML email body with star rating links."""
+def _build_feedback_html(customer_email: str, host_display_name: str, feedback_link: str) -> str:
+    """Build the HTML email body with star rating links. host_display_name is shown (not email)."""
+    display = (host_display_name or "our team").strip()
     stars_html = ""
     for i in range(1, 6):
         star_link = f"{feedback_link}&rating={i}"
@@ -29,7 +30,7 @@ def _build_feedback_html(customer_email: str, mm_email: str, feedback_link: str)
         <h2 style="color: #1a1a2e; margin-bottom: 8px;">How was your experience?</h2>
         <p style="color: #555; line-height: 1.6;">
           Hi,<br/>
-          You recently had a migration call with <strong>{mm_email}</strong>.
+          You recently had a migration call with <strong>{display}</strong>.
           We'd love to hear your feedback — it only takes a few seconds.
         </p>
 
@@ -55,7 +56,7 @@ def _build_feedback_html(customer_email: str, mm_email: str, feedback_link: str)
     """
 
 
-def send_feedback_email(customer_email: str, mm_email: str, feedback_link: str):
+def send_feedback_email(customer_email: str, host_display_name: str, feedback_link: str):
     if not settings.smtp_username:
         logger.warning("SMTP not configured — email skipped")
         return
@@ -65,7 +66,7 @@ def send_feedback_email(customer_email: str, mm_email: str, feedback_link: str):
     msg["From"] = settings.smtp_from_email or settings.smtp_username
     msg["To"] = customer_email
 
-    html = _build_feedback_html(customer_email, mm_email, feedback_link)
+    html = _build_feedback_html(customer_email, host_display_name, feedback_link)
     msg.attach(MIMEText(html, "html"))
 
     with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:

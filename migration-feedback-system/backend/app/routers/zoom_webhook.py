@@ -11,7 +11,7 @@ from app.database import get_db
 from app.crud import create_meeting, create_feedback_request
 from app.utils.domain_parser import extract_domain, is_internal_email
 from app.services.email_service import send_feedback_email
-from app.services.zoom_service import get_past_meeting_participants
+from app.services.zoom_service import get_past_meeting_participants, get_zoom_user_display_name
 from app.schemas import MeetingCreate
 
 logger = logging.getLogger(__name__)
@@ -65,6 +65,7 @@ async def zoom_webhook(request: Request, db: Session = Depends(get_db)):
     meeting_obj = payload.get("payload", {}).get("object", {})
     meeting_id = str(meeting_obj.get("id", ""))
     host_email = meeting_obj.get("host_email", "")
+    host_id = meeting_obj.get("host_id", "")
     meeting_uuid = meeting_obj.get("uuid", "")
 
     if not meeting_id:
@@ -79,11 +80,23 @@ async def zoom_webhook(request: Request, db: Session = Depends(get_db)):
 
     # Fall back to webhook payload participants if the API returned nothing
     if not api_participants:
+        logger.warning(f"Meeting {meeting_id}: No participants from Zoom API; check ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET")
         webhook_participants = meeting_obj.get("participants", [])
         api_participants = [
             {"user_email": p.get("email", "") or p.get("user_email", "")}
             for p in webhook_participants
         ]
+        if not api_participants:
+            logger.info(f"Meeting {meeting_id}: Webhook payload also has no participants")
+
+    # Resolve host display name for the email (show name, not email). Never let this break the flow.
+    try:
+        host_display_name = get_zoom_user_display_name(host_id) if host_id else ""
+    except Exception as e:
+        logger.warning(f"Host name lookup failed, using host email: {e}")
+        host_display_name = ""
+    if not host_display_name:
+        host_display_name = host_email or "our team"
 
     external_participants = []
     mm_email = host_email
@@ -101,7 +114,10 @@ async def zoom_webhook(request: Request, db: Session = Depends(get_db)):
             external_participants.append(email)
 
     if not external_participants:
-        logger.info(f"Meeting {meeting_id}: No external participants found")
+        logger.info(
+            f"Meeting {meeting_id}: No external participants (internal_domain={settings.internal_domain}; "
+            f"all {len(api_participants)} participant(s) treated as internal)"
+        )
         return {"status": "no_external_participants"}
 
     customer_domain = extract_domain(external_participants[0])
@@ -123,11 +139,16 @@ async def zoom_webhook(request: Request, db: Session = Depends(get_db)):
 
         feedback_link = f"{settings.feedback_base_url}/feedback?token={token}"
         try:
-            send_feedback_email(email, mm_email, feedback_link)
+            send_feedback_email(email, host_display_name, feedback_link)
             logger.info(f"Feedback email sent to {email}")
             emails_sent += 1
         except Exception as e:
-            logger.error(f"Failed to send email to {email}: {e}")
+            logger.error(f"Failed to send email to {email}: {e}", exc_info=True)
+    if emails_sent == 0 and external_participants:
+        logger.warning(
+            f"Meeting {meeting_id}: No emails sent to {len(external_participants)} external participant(s). "
+            "Check SMTP_USERNAME/SMTP_PASSWORD and logs above for send errors."
+        )
 
     return {
         "status": "processed",
