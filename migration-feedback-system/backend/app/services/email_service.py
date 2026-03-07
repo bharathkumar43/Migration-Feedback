@@ -13,11 +13,12 @@ def _build_feedback_html(customer_email: str, host_display_name: str, feedback_l
     """Build the HTML email body with star rating links. host_display_name is shown (not email)."""
     display = (host_display_name or "our team").strip()
     stars_html = ""
-    for i in range(1, 6):
+    for i in range(5, 0, -1):
         star_link = f"{feedback_link}&rating={i}"
+        color = "#f5a623" if i >= 3 else "#e0e0e0"
         stars_html += (
             f'<a href="{star_link}" '
-            f'style="text-decoration:none;font-size:32px;margin:0 4px;color:{"#f5a623" if i <= 3 else "#e0e0e0"};">'
+            f'style="text-decoration:none;font-size:32px;margin:0 4px;color:{color};">'
             f"{'&#9733;' * i}{'&#9734;' * (5 - i)}"
             f"</a><br/>"
         )
