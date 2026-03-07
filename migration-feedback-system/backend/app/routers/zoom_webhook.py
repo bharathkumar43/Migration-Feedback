@@ -138,6 +138,7 @@ async def zoom_webhook(request: Request, db: Session = Depends(get_db)):
             continue
 
         feedback_link = f"{settings.feedback_base_url}/feedback?token={token}"
+        logger.info(f"Feedback link: {feedback_link} (FEEDBACK_BASE_URL={settings.feedback_base_url})")
         try:
             send_feedback_email(email, host_display_name, feedback_link)
             logger.info(f"Feedback email sent to {email}")

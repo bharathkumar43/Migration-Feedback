@@ -31,6 +31,11 @@ async def lifespan(app: FastAPI):
         scheduler.add_job(send_pending_reminders, "interval", hours=1, id="reminder_job")
         scheduler.start()
         logger.info("Reminder scheduler started")
+
+        s = get_settings()
+        logger.info(f"FEEDBACK_BASE_URL = {s.feedback_base_url}")
+        logger.info(f"INTERNAL_DOMAIN = {s.internal_domain}")
+        logger.info(f"SMTP configured = {bool(s.smtp_username)}")
     except Exception as e:
         logger.exception("Startup failed: %s", e)
         raise
