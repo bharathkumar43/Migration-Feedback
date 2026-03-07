@@ -18,18 +18,22 @@ scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables created")
-
-    db = SessionLocal()
     try:
-        seed_default_admin(db)
-    finally:
-        db.close()
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created")
 
-    scheduler.add_job(send_pending_reminders, "interval", hours=1, id="reminder_job")
-    scheduler.start()
-    logger.info("Reminder scheduler started")
+        db = SessionLocal()
+        try:
+            seed_default_admin(db)
+        finally:
+            db.close()
+
+        scheduler.add_job(send_pending_reminders, "interval", hours=1, id="reminder_job")
+        scheduler.start()
+        logger.info("Reminder scheduler started")
+    except Exception as e:
+        logger.exception("Startup failed: %s", e)
+        raise
 
     yield
 

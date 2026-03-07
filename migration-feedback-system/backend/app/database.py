@@ -32,6 +32,10 @@ if not DATABASE_URL or _render_needs_url:
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# Render Postgres expects SSL; add sslmode if not already present
+if IS_RENDER and "sslmode" not in (DATABASE_URL or ""):
+    DATABASE_URL = DATABASE_URL.rstrip("/") + ("&" if "?" in DATABASE_URL else "?") + "sslmode=require"
+
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=10, max_overflow=20)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
