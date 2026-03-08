@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from_email: str = ""
 
+    resend_api_key: str = ""
+    resend_from_email: str = "onboarding@resend.dev"
+
     jira_base_url: str = ""
     jira_email: str = ""
     jira_api_token: str = ""

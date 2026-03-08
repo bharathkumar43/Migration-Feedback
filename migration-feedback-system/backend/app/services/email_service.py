@@ -1,12 +1,36 @@
 import logging
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import httpx
 
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
+RESEND_API_URL = "https://api.resend.com/emails"
+
+
+def _send_via_resend(to: str, subject: str, html: str):
+    """Send an email using the Resend HTTPS API (works on Render free tier)."""
+    if not settings.resend_api_key:
+        logger.warning("RESEND_API_KEY not configured — email skipped")
+        return
+
+    response = httpx.post(
+        RESEND_API_URL,
+        headers={
+            "Authorization": f"Bearer {settings.resend_api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "from": settings.resend_from_email,
+            "to": [to],
+            "subject": subject,
+            "html": html,
+        },
+        timeout=15,
+    )
+    response.raise_for_status()
+    logger.info(f"Resend API response: {response.json()}")
 
 
 def _build_feedback_html(customer_email: str, host_display_name: str, feedback_link: str) -> str:
@@ -58,37 +82,16 @@ def _build_feedback_html(customer_email: str, host_display_name: str, feedback_l
 
 
 def send_feedback_email(customer_email: str, host_display_name: str, feedback_link: str):
-    if not settings.smtp_username:
-        logger.warning("SMTP not configured — email skipped")
-        return
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "How was your migration call? — Quick Feedback"
-    msg["From"] = settings.smtp_from_email or settings.smtp_username
-    msg["To"] = customer_email
-
     html = _build_feedback_html(customer_email, host_display_name, feedback_link)
-    msg.attach(MIMEText(html, "html"))
-
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
-        server.ehlo()
-        server.starttls()
-        server.login(settings.smtp_username, settings.smtp_password)
-        server.sendmail(msg["From"], [customer_email], msg.as_string())
-
-    logger.info(f"Email sent to {customer_email}")
+    _send_via_resend(
+        to=customer_email,
+        subject="How was your migration call? — Quick Feedback",
+        html=html,
+    )
+    logger.info(f"Feedback email sent to {customer_email}")
 
 
 def send_reminder_email(customer_email: str, feedback_link: str):
-    if not settings.smtp_username:
-        logger.warning("SMTP not configured — reminder skipped")
-        return
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Reminder: We'd still love your feedback!"
-    msg["From"] = settings.smtp_from_email or settings.smtp_username
-    msg["To"] = customer_email
-
     html = f"""
     <html>
     <body style="font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; padding: 40px;">
@@ -113,12 +116,9 @@ def send_reminder_email(customer_email: str, feedback_link: str):
     </body>
     </html>
     """
-    msg.attach(MIMEText(html, "html"))
-
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
-        server.ehlo()
-        server.starttls()
-        server.login(settings.smtp_username, settings.smtp_password)
-        server.sendmail(msg["From"], [customer_email], msg.as_string())
-
+    _send_via_resend(
+        to=customer_email,
+        subject="Reminder: We'd still love your feedback!",
+        html=html,
+    )
     logger.info(f"Reminder sent to {customer_email}")
