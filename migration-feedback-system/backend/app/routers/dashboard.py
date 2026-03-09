@@ -1,8 +1,9 @@
 import logging
+from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 from app.database import get_db
 from app.models import Meeting, FeedbackRequest, FeedbackResponse
@@ -12,35 +13,52 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/stats")
-def dashboard_stats(db: Session = Depends(get_db), _admin: dict = Depends(get_current_admin)):
+@router.get("/summary")
+def dashboard_summary(db: Session = Depends(get_db), _admin: dict = Depends(get_current_admin)):
     total_meetings = db.query(func.count(Meeting.id)).scalar() or 0
-    total_feedback_sent = db.query(func.count(FeedbackRequest.id)).scalar() or 0
-    total_responses = db.query(func.count(FeedbackResponse.id)).scalar() or 0
+    total_feedbacks = db.query(func.count(FeedbackResponse.id)).scalar() or 0
     avg_rating = db.query(func.avg(FeedbackResponse.rating)).scalar()
+    overall_avg_rating = round(float(avg_rating), 2) if avg_rating else 0.0
 
-    response_rate = (total_responses / total_feedback_sent * 100) if total_feedback_sent > 0 else 0
+    mm_rows = (
+        db.query(
+            FeedbackResponse.host_email,
+            func.count(FeedbackResponse.id).label("total"),
+            func.avg(FeedbackResponse.rating).label("avg_rating"),
+            func.sum(case((FeedbackResponse.rating >= 4, 1), else_=0)).label("positive"),
+        )
+        .group_by(FeedbackResponse.host_email)
+        .order_by(func.avg(FeedbackResponse.rating).desc())
+        .all()
+    )
+
+    mm_stats = [
+        {
+            "mm_email": row.host_email,
+            "total_feedbacks": row.total,
+            "average_rating": round(float(row.avg_rating), 2),
+            "positive_pct": round(int(row.positive) / row.total * 100, 1) if row.total else 0,
+        }
+        for row in mm_rows
+    ]
 
     return {
+        "overall_avg_rating": overall_avg_rating,
+        "total_feedbacks": total_feedbacks,
         "total_meetings": total_meetings,
-        "total_feedback_sent": total_feedback_sent,
-        "total_responses": total_responses,
-        "response_rate": round(response_rate, 1),
-        "average_rating": round(float(avg_rating), 2) if avg_rating else None,
+        "mm_stats": mm_stats,
     }
 
 
-@router.get("/responses")
-def list_responses(
-    skip: int = 0,
+@router.get("/feedbacks")
+def list_feedbacks(
     limit: int = 50,
     db: Session = Depends(get_db),
     _admin: dict = Depends(get_current_admin),
 ):
-    responses = (
+    rows = (
         db.query(FeedbackResponse)
         .order_by(FeedbackResponse.submitted_at.desc())
-        .offset(skip)
         .limit(limit)
         .all()
     )
@@ -48,65 +66,80 @@ def list_responses(
         {
             "id": r.id,
             "customer_email": r.customer_email,
-            "host_email": r.host_email,
             "rating": r.rating,
-            "comments": r.comments,
-            "submitted_at": r.submitted_at.isoformat() if r.submitted_at else None,
+            "comment": r.comments,
+            "mm_email": r.host_email,
+            "created_at": r.submitted_at.isoformat() if r.submitted_at else None,
         }
-        for r in responses
+        for r in rows
     ]
 
 
-@router.get("/meetings")
-def list_meetings(
-    skip: int = 0,
-    limit: int = 50,
+@router.get("/trends")
+def daily_trends(
+    start_date: str | None = None,
+    end_date: str | None = None,
     db: Session = Depends(get_db),
     _admin: dict = Depends(get_current_admin),
 ):
-    meetings = (
-        db.query(Meeting)
-        .order_by(Meeting.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    query = db.query(FeedbackResponse)
+
+    if start_date:
+        try:
+            sd = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(FeedbackResponse.submitted_at >= sd)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            ed = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+            query = query.filter(FeedbackResponse.submitted_at < ed)
+        except ValueError:
+            pass
+
+    feedbacks = query.order_by(FeedbackResponse.submitted_at.asc()).all()
+
+    if not feedbacks:
+        return []
+
+    weeks: dict[str, list] = {}
+    for fb in feedbacks:
+        if not fb.submitted_at:
+            continue
+        week_start = fb.submitted_at - timedelta(days=fb.submitted_at.weekday())
+        week_key = week_start.strftime("%Y-%m-%d")
+        weeks.setdefault(week_key, []).append(fb.rating)
+
     return [
         {
-            "id": m.id,
-            "zoom_meeting_id": m.zoom_meeting_id,
-            "host_email": m.host_email,
-            "host_display_name": m.host_display_name,
-            "participant_email": m.participant_email,
-            "topic": m.topic,
-            "start_time": m.start_time.isoformat() if m.start_time else None,
-            "end_time": m.end_time.isoformat() if m.end_time else None,
-            "duration_minutes": m.duration_minutes,
-            "created_at": m.created_at.isoformat() if m.created_at else None,
+            "week": wk,
+            "average_rating": round(sum(ratings) / len(ratings), 2),
+            "total_feedbacks": len(ratings),
         }
-        for m in meetings
+        for wk, ratings in sorted(weeks.items())
     ]
 
 
-@router.get("/pending")
-def list_pending(
-    db: Session = Depends(get_db),
-    _admin: dict = Depends(get_current_admin),
-):
-    pending = (
-        db.query(FeedbackRequest)
-        .filter(FeedbackRequest.completed == False)
-        .order_by(FeedbackRequest.created_at.desc())
+@router.get("/leaderboard")
+def leaderboard(db: Session = Depends(get_db), _admin: dict = Depends(get_current_admin)):
+    mm_rows = (
+        db.query(
+            FeedbackResponse.host_email,
+            func.count(FeedbackResponse.id).label("total"),
+            func.avg(FeedbackResponse.rating).label("avg_rating"),
+            func.sum(case((FeedbackResponse.rating >= 4, 1), else_=0)).label("positive"),
+        )
+        .group_by(FeedbackResponse.host_email)
+        .order_by(func.avg(FeedbackResponse.rating).desc())
         .all()
     )
+
     return [
         {
-            "id": p.id,
-            "customer_email": p.customer_email,
-            "host_email": p.host_email,
-            "host_display_name": p.host_display_name,
-            "sent_at": p.sent_at.isoformat() if p.sent_at else None,
-            "reminder_sent": p.reminder_sent,
+            "mm_email": row.host_email,
+            "total_feedbacks": row.total,
+            "average_rating": round(float(row.avg_rating), 2),
+            "positive_pct": round(int(row.positive) / row.total * 100, 1) if row.total else 0,
         }
-        for p in pending
+        for row in mm_rows
     ]

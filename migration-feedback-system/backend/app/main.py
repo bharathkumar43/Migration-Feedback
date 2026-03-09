@@ -1,3 +1,4 @@
+import os
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -19,6 +20,9 @@ scheduler = AsyncIOScheduler()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
+        if os.environ.get("RESET_DB", "").lower() in ("1", "true", "yes"):
+            Base.metadata.drop_all(bind=engine)
+            logger.info("RESET_DB flag set — dropped all tables")
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created")
 

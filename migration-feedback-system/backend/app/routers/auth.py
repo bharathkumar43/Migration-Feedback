@@ -27,9 +27,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class SignupRequest(BaseModel):
+    username: str
+    display_name: str
+    password: str
 
 
 def _hash_password(password: str) -> str:
@@ -81,6 +82,7 @@ def seed_default_admin(db: Session):
     if not existing:
         admin = AdminUser(
             username=settings.admin_username,
+            display_name="Admin",
             hashed_password=_hash_password(settings.admin_password),
         )
         db.add(admin)
@@ -90,16 +92,53 @@ def seed_default_admin(db: Session):
         logger.info("Default admin already exists")
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 def login(body: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.username == body.username).first()
     if not user or not _verify_password(body.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    token = _create_token({"sub": user.username}, settings.admin_token_secret)
-    return TokenResponse(access_token=token)
+    token = _create_token(
+        {"sub": user.username, "display_name": user.display_name or user.username},
+        settings.admin_token_secret,
+    )
+    return {
+        "token": token,
+        "username": user.username,
+        "display_name": user.display_name or user.username,
+    }
+
+
+@router.post("/signup")
+def signup(body: SignupRequest, db: Session = Depends(get_db)):
+    if len(body.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if len(body.username) < 3:
+        raise HTTPException(status_code=400, detail="Username must be at least 3 characters")
+
+    existing = db.query(AdminUser).filter(AdminUser.username == body.username).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Username already taken")
+
+    user = AdminUser(
+        username=body.username,
+        display_name=body.display_name,
+        hashed_password=_hash_password(body.password),
+    )
+    db.add(user)
+    db.commit()
+
+    token = _create_token(
+        {"sub": user.username, "display_name": user.display_name},
+        settings.admin_token_secret,
+    )
+    return {
+        "token": token,
+        "username": user.username,
+        "display_name": user.display_name,
+    }
 
 
 @router.get("/me")
 def me(admin: dict = Depends(get_current_admin)):
-    return {"username": admin["sub"]}
+    return {"username": admin["sub"], "display_name": admin.get("display_name", admin["sub"])}

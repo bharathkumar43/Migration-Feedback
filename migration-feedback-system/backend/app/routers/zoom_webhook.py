@@ -37,7 +37,7 @@ def _generate_feedback_token() -> str:
     return secrets.token_urlsafe(32)
 
 
-@router.post("")
+@router.post("/zoom")
 async def zoom_webhook(request: Request):
     body = await request.body()
     payload = await request.json()

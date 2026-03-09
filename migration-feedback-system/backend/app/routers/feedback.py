@@ -15,7 +15,7 @@ router = APIRouter()
 class FeedbackSubmission(BaseModel):
     token: str
     rating: int
-    comments: str | None = None
+    comment: str | None = None
 
 
 class FeedbackInfo(BaseModel):
@@ -24,11 +24,13 @@ class FeedbackInfo(BaseModel):
     already_completed: bool
 
 
-@router.get("/info")
-def feedback_info(token: str, db: Session = Depends(get_db)):
+@router.get("/validate")
+def validate_token(token: str, db: Session = Depends(get_db)):
     fb_req = db.query(FeedbackRequest).filter(FeedbackRequest.token == token).first()
     if not fb_req:
         raise HTTPException(status_code=404, detail="Invalid or expired feedback link")
+    if fb_req.completed:
+        raise HTTPException(status_code=409, detail="Feedback already submitted")
     return FeedbackInfo(
         host_display_name=fb_req.host_display_name,
         customer_email=fb_req.customer_email,
@@ -42,7 +44,7 @@ def submit_feedback(body: FeedbackSubmission, db: Session = Depends(get_db)):
     if not fb_req:
         raise HTTPException(status_code=404, detail="Invalid or expired feedback link")
     if fb_req.completed:
-        raise HTTPException(status_code=400, detail="Feedback already submitted")
+        raise HTTPException(status_code=409, detail="Feedback already submitted")
     if not 1 <= body.rating <= 5:
         raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
 
@@ -51,7 +53,7 @@ def submit_feedback(body: FeedbackSubmission, db: Session = Depends(get_db)):
         customer_email=fb_req.customer_email,
         host_email=fb_req.host_email,
         rating=body.rating,
-        comments=body.comments,
+        comments=body.comment,
         submitted_at=datetime.now(timezone.utc),
     )
     db.add(response)
