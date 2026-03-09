@@ -6,31 +6,31 @@ from app.config import get_settings
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-RESEND_API_URL = "https://api.resend.com/emails"
+SENDGRID_API_URL = "https://api.sendgrid.com/v3/mail/send"
 
 
-def _send_via_resend(to: str, subject: str, html: str):
-    """Send an email using the Resend HTTPS API (works on Render free tier)."""
-    if not settings.resend_api_key:
-        logger.warning("RESEND_API_KEY not configured — email skipped")
+def _send_via_sendgrid(to: str, subject: str, html: str):
+    """Send an email using the SendGrid v3 API."""
+    if not settings.sendgrid_api_key:
+        logger.warning("SENDGRID_API_KEY not configured — email skipped")
         return
 
     response = httpx.post(
-        RESEND_API_URL,
+        SENDGRID_API_URL,
         headers={
-            "Authorization": f"Bearer {settings.resend_api_key}",
+            "Authorization": f"Bearer {settings.sendgrid_api_key}",
             "Content-Type": "application/json",
         },
         json={
-            "from": settings.resend_from_email,
-            "to": [to],
+            "personalizations": [{"to": [{"email": to}]}],
+            "from": {"email": settings.sendgrid_from_email},
             "subject": subject,
-            "html": html,
+            "content": [{"type": "text/html", "value": html}],
         },
         timeout=15,
     )
     response.raise_for_status()
-    logger.info(f"Resend API response: {response.json()}")
+    logger.info(f"SendGrid API response: status={response.status_code}")
 
 
 def _build_feedback_html(customer_email: str, host_display_name: str, feedback_link: str) -> str:
@@ -83,7 +83,7 @@ def _build_feedback_html(customer_email: str, host_display_name: str, feedback_l
 
 def send_feedback_email(customer_email: str, host_display_name: str, feedback_link: str):
     html = _build_feedback_html(customer_email, host_display_name, feedback_link)
-    _send_via_resend(
+    _send_via_sendgrid(
         to=customer_email,
         subject="How was your migration call? — Quick Feedback",
         html=html,
@@ -116,7 +116,7 @@ def send_reminder_email(customer_email: str, feedback_link: str):
     </body>
     </html>
     """
-    _send_via_resend(
+    _send_via_sendgrid(
         to=customer_email,
         subject="Reminder: We'd still love your feedback!",
         html=html,

@@ -35,8 +35,8 @@ async def lifespan(app: FastAPI):
         s = get_settings()
         logger.info(f"FEEDBACK_BASE_URL = {s.feedback_base_url}")
         logger.info(f"INTERNAL_DOMAIN = {s.internal_domain}")
-        logger.info(f"Resend configured = {bool(s.resend_api_key)}")
-        logger.info(f"Resend from = {s.resend_from_email}")
+        logger.info(f"SendGrid configured = {bool(s.sendgrid_api_key)}")
+        logger.info(f"SendGrid from = {s.sendgrid_from_email}")
     except Exception as e:
         logger.exception("Startup failed: %s", e)
         raise
