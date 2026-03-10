@@ -42,6 +42,11 @@ class FeedbackResponse(Base):
     customer_email = Column(String, nullable=False)
     host_email = Column(String, nullable=False)
     rating = Column(Integer, nullable=False)
+    business_requirement = Column(String, nullable=True)
+    confidence_level = Column(String, nullable=True)
+    engineer_rating = Column(Integer, nullable=True)
+    improvements = Column(Text, nullable=True)
+    concern_resolved = Column(String, nullable=True)
     comments = Column(Text, nullable=True)
     submitted_at = Column(DateTime, default=datetime.datetime.utcnow)
 

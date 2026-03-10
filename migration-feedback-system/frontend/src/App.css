@@ -672,6 +672,270 @@ body {
   font-weight: 500;
 }
 
+/* ============================================================
+   CloudFuze Feedback Form — Purple Theme
+   ============================================================ */
+
+.cf-form-wrapper {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 16px 48px;
+}
+
+.cf-form-card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.cf-form-header {
+  background: #6B2FA0;
+  color: #fff;
+  padding: 36px 40px 28px;
+  border-top: 6px solid #4A1A72;
+}
+
+.cf-form-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.cf-form-header p {
+  font-size: 14px;
+  line-height: 1.7;
+  opacity: 0.92;
+  margin: 0;
+  color: #fff;
+}
+
+.cf-form-body {
+  padding: 32px 40px 40px;
+}
+
+.cf-form-body.cf-center {
+  text-align: center;
+  padding: 60px 40px;
+}
+
+.cf-required-note {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 28px;
+}
+
+.cf-required {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.cf-question {
+  margin-bottom: 32px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cf-question:last-of-type {
+  border-bottom: none;
+  margin-bottom: 28px;
+  padding-bottom: 0;
+}
+
+.cf-question-label {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+/* Rating Scale (1–5 dots) */
+.cf-rating-scale {
+  margin-top: 8px;
+}
+
+.cf-rating-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+
+.cf-rating-dots {
+  display: flex;
+  gap: 12px;
+}
+
+.cf-rating-dot {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.cf-rating-dot:hover {
+  border-color: #6B2FA0;
+  color: #6B2FA0;
+  background: #f3e8ff;
+}
+
+.cf-rating-dot.active {
+  border-color: #6B2FA0;
+  background: #6B2FA0;
+  color: #fff;
+}
+
+/* Radio Group */
+.cf-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cf-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.cf-radio-label:hover {
+  background: #f8f5fc;
+}
+
+.cf-radio-label.active {
+  background: #f3e8ff;
+}
+
+.cf-radio-label input[type="radio"] {
+  display: none;
+}
+
+.cf-radio-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  flex-shrink: 0;
+  position: relative;
+  transition: border-color 0.2s;
+}
+
+.cf-radio-label.active .cf-radio-circle {
+  border-color: #6B2FA0;
+}
+
+.cf-radio-label.active .cf-radio-circle::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6B2FA0;
+}
+
+.cf-radio-text {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+/* Textarea */
+.cf-textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 14px;
+  border: 2px solid var(--color-border);
+  border-bottom: 3px solid var(--color-border);
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  transition: border-color 0.2s;
+  background: #fff;
+}
+
+.cf-textarea:focus {
+  outline: none;
+  border-bottom-color: #6B2FA0;
+}
+
+.cf-textarea::placeholder {
+  color: #aaa;
+}
+
+/* Submit Button */
+.cf-submit-btn {
+  display: block;
+  width: auto;
+  padding: 12px 40px;
+  background: #6B2FA0;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  font-family: inherit;
+  margin-top: 8px;
+}
+
+.cf-submit-btn:hover {
+  background: #5a2488;
+}
+
+.cf-submit-btn:active {
+  transform: scale(0.98);
+}
+
+.cf-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Success Icon */
+.cf-success-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+/* Footer */
+.cf-form-footer {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.cf-form-footer p {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* Loading state inside form */
+.cf-form-loading {
+  text-align: center;
+  padding: 60px 40px;
+  color: var(--color-text-muted);
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 640px) {
   .header-inner {
@@ -688,6 +952,28 @@ body {
 
   .star-btn {
     font-size: 32px;
+  }
+
+  .cf-form-header {
+    padding: 28px 20px 20px;
+  }
+
+  .cf-form-header h1 {
+    font-size: 22px;
+  }
+
+  .cf-form-body {
+    padding: 24px 20px 32px;
+  }
+
+  .cf-rating-dots {
+    gap: 8px;
+  }
+
+  .cf-rating-dot {
+    width: 38px;
+    height: 38px;
+    font-size: 13px;
   }
 
   .card-value {

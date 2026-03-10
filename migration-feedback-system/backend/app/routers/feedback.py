@@ -15,7 +15,11 @@ router = APIRouter()
 class FeedbackSubmission(BaseModel):
     token: str
     rating: int
-    comment: str | None = None
+    business_requirement: str | None = None
+    confidence_level: str | None = None
+    engineer_rating: int | None = None
+    improvements: str | None = None
+    concern_resolved: str | None = None
 
 
 class FeedbackInfo(BaseModel):
@@ -53,7 +57,11 @@ def submit_feedback(body: FeedbackSubmission, db: Session = Depends(get_db)):
         customer_email=fb_req.customer_email,
         host_email=fb_req.host_email,
         rating=body.rating,
-        comments=body.comment,
+        business_requirement=body.business_requirement,
+        confidence_level=body.confidence_level,
+        engineer_rating=body.engineer_rating,
+        improvements=body.improvements,
+        concern_resolved=body.concern_resolved,
         submitted_at=datetime.now(timezone.utc),
     )
     db.add(response)
