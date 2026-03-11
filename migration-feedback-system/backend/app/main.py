@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import get_settings
-from app.database import engine, Base, SessionLocal
+from app.database import engine, Base, SessionLocal, ensure_feedback_responses_columns
 from app.routers import zoom_webhook, feedback, dashboard, auth
 from app.routers.auth import seed_default_admin
 from app.services.reminder_service import send_pending_reminders
@@ -25,6 +25,7 @@ async def lifespan(app: FastAPI):
             logger.info("RESET_DB flag set — dropped all tables")
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created")
+        ensure_feedback_responses_columns()
 
         db = SessionLocal()
         try:
@@ -61,7 +62,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://migration-feedback-frontend.onrender.com",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
