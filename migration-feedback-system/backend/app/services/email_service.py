@@ -33,48 +33,48 @@ def _send_via_sendgrid(to: str, subject: str, html: str):
     logger.info(f"SendGrid API response: status={response.status_code}")
 
 
-def _build_feedback_html(customer_email: str, host_display_name: str, feedback_link: str) -> str:
-    """Build the HTML email body with star rating links. host_display_name is shown (not email)."""
-    display = (host_display_name or "our team").strip()
-    stars_html = ""
-    for i in range(5, 0, -1):
-        star_link = f"{feedback_link}&rating={i}"
-        color = "#f5a623" if i >= 3 else "#e0e0e0"
-        stars_html += (
-            f'<a href="{star_link}" '
-            f'style="text-decoration:none;font-size:32px;margin:0 4px;color:{color};">'
-            f"{'&#9733;' * i}{'&#9734;' * (5 - i)}"
-            f"</a><br/>"
-        )
+def _logo_url() -> str:
+    """Base URL for logo image (same origin as feedback form). Place logo at frontend/public/logo.png or set EMAIL_LOGO_URL."""
+    base = (settings.feedback_base_url or "").rstrip("/")
+    return f"{base}/logo.png"
 
+
+def _build_feedback_html(customer_email: str, host_display_name: str, feedback_link: str) -> str:
+    """Build the HTML email body matching the exact Migration Feedback Form (PDF): logo, * Required, title, intro, all 6 questions, then CTA link."""
+    logo = _logo_url()
     return f"""
     <html>
-    <body style="font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; padding: 40px;">
-      <div style="max-width: 560px; margin: auto; background: #fff; border-radius: 12px;
-                  padding: 40px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
-        <h2 style="color: #1a1a2e; margin-bottom: 8px;">How was your experience?</h2>
-        <p style="color: #555; line-height: 1.6;">
-          Hi,<br/>
-          You recently had a migration call with <strong>{display}</strong>.
-          We'd love to hear your feedback — it only takes a few seconds.
-        </p>
-
-        <div style="text-align: center; margin: 32px 0;">
-          <p style="font-size: 14px; color: #888; margin-bottom: 12px;">Click a rating below:</p>
-          {stars_html}
+    <body style="font-family: 'Segoe UI', Arial, sans-serif; background: #fff; padding: 32px; margin: 0; color: #333;">
+      <div style="max-width: 680px; margin: auto;">
+        <p style="font-size: 13px; color: #333; margin: 0 0 8px 0;">* Required</p>
+        <div style="margin-bottom: 16px;">
+          <img src="{logo}" alt="CloudFuze" style="max-width: 200px; height: auto; display: block;" />
         </div>
-
-        <div style="text-align: center; margin-top: 24px;">
-          <a href="{feedback_link}"
-             style="display:inline-block; padding: 12px 32px; background: #2563eb; color: #fff;
-                    border-radius: 8px; text-decoration: none; font-weight: 600;">
-            Leave Detailed Feedback
-          </a>
-        </div>
-
-        <p style="color: #999; font-size: 12px; margin-top: 32px; text-align: center;">
-          CloudFuze Migration Team &bull; This link is unique to you.
+        <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 16px 0; color: #000;">Migration Feedback Form</h1>
+        <p style="font-size: 14px; line-height: 1.7; margin: 0 0 24px 0; color: #333;">
+          Thank you for participating in today's CloudFuze migration session.<br/>
+          Your feedback helps us enhance our service and better support your migration needs.<br/>
+          All information shared will remain confidential.
         </p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #333; margin-bottom: 24px;">
+          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">1. How would you rate your overall experience? *</td></tr>
+          <tr><td style="padding: 4px 0 12px 0; color: #666;">Extremely dissatisfied &nbsp;&mdash;&nbsp; Extremely satisfied</td></tr>
+          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">2. Did we understand your business requirement properly? *</td></tr>
+          <tr><td style="padding: 4px 0 12px 0; color: #666;">Yes &nbsp;&bull;&nbsp; No &nbsp;&bull;&nbsp; Partially</td></tr>
+          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">3. After today's call, how confident do you feel about the progress of your migration project? *</td></tr>
+          <tr><td style="padding: 4px 0 12px 0; color: #666;">Not Confident &nbsp;&bull;&nbsp; Slightly Confident &nbsp;&bull;&nbsp; Moderately Confident &nbsp;&bull;&nbsp; Confident &nbsp;&bull;&nbsp; Very Confident</td></tr>
+          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">4. How would you rate the clarity and professionalism of our migration engineer during the call? *</td></tr>
+          <tr><td style="padding: 4px 0 12px 0; color: #666;">Enter your answer</td></tr>
+          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">5. Is there anything we could improve or any additional support you require? *</td></tr>
+          <tr><td style="padding: 4px 0 12px 0; color: #666;">Enter your answer</td></tr>
+          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">6. Was your concern or query addressed effectively during the call?</td></tr>
+          <tr><td style="padding: 4px 0 12px 0; color: #666;">Yes, fully resolved &nbsp;&bull;&nbsp; Partially resolved &nbsp;&bull;&nbsp; Not resolved</td></tr>
+        </table>
+        <p style="font-size: 15px; color: #333; margin-bottom: 16px;">Please click the link below to open the form and submit your feedback.</p>
+        <p style="margin-bottom: 24px;">
+          <a href="{feedback_link}" style="font-size: 15px; color: #1155cc; text-decoration: underline;">Open Migration Feedback Form</a>
+        </p>
+        <p style="color: #666; font-size: 12px; margin: 0;">CloudFuze Migration Team &bull; This link is unique to you.</p>
       </div>
     </body>
     </html>
@@ -85,40 +85,41 @@ def send_feedback_email(customer_email: str, host_display_name: str, feedback_li
     html = _build_feedback_html(customer_email, host_display_name, feedback_link)
     _send_via_sendgrid(
         to=customer_email,
-        subject="How was your migration call? — Quick Feedback",
+        subject="Migration Feedback Form — CloudFuze",
         html=html,
     )
     logger.info(f"Feedback email sent to {customer_email}")
 
 
 def send_reminder_email(customer_email: str, feedback_link: str):
+    """Reminder email — same template as Migration Feedback Form (PDF): logo, intro, CTA."""
+    logo = _logo_url()
     html = f"""
     <html>
-    <body style="font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; padding: 40px;">
-      <div style="max-width: 560px; margin: auto; background: #fff; border-radius: 12px;
-                  padding: 40px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
-        <h2 style="color: #1a1a2e;">Just a friendly reminder</h2>
-        <p style="color: #555; line-height: 1.6;">
-          We noticed you haven't shared your feedback yet. Your input helps us improve
-          our migration service.
-        </p>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="{feedback_link}"
-             style="display:inline-block; padding: 12px 32px; background: #2563eb; color: #fff;
-                    border-radius: 8px; text-decoration: none; font-weight: 600;">
-            Share Feedback Now
-          </a>
+    <body style="font-family: 'Segoe UI', Arial, sans-serif; background: #fff; padding: 32px; margin: 0; color: #333;">
+      <div style="max-width: 680px; margin: auto;">
+        <p style="font-size: 13px; color: #333; margin: 0 0 8px 0;">* Required</p>
+        <div style="margin-bottom: 16px;">
+          <img src="{logo}" alt="CloudFuze" style="max-width: 200px; height: auto; display: block;" />
         </div>
-        <p style="color: #999; font-size: 12px; margin-top: 32px; text-align: center;">
-          CloudFuze Migration Team
+        <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 16px 0; color: #000;">Migration Feedback Form</h1>
+        <p style="font-size: 14px; line-height: 1.7; margin: 0 0 24px 0; color: #333;">
+          Thank you for participating in today's CloudFuze migration session.<br/>
+          Your feedback helps us enhance our service and better support your migration needs.<br/>
+          All information shared will remain confidential.
         </p>
+        <p style="font-size: 15px; color: #333; margin-bottom: 16px;">We noticed you haven't completed the feedback form yet. Please click the link below to open it.</p>
+        <p style="margin-bottom: 24px;">
+          <a href="{feedback_link}" style="font-size: 15px; color: #1155cc; text-decoration: underline;">Open Migration Feedback Form</a>
+        </p>
+        <p style="color: #666; font-size: 12px; margin: 0;">CloudFuze Migration Team</p>
       </div>
     </body>
     </html>
     """
     _send_via_sendgrid(
         to=customer_email,
-        subject="Reminder: We'd still love your feedback!",
+        subject="Reminder — Migration Feedback Form",
         html=html,
     )
     logger.info(f"Reminder sent to {customer_email}")
