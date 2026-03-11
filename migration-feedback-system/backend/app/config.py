@@ -30,6 +30,8 @@ class Settings(BaseSettings):
 
     feedback_base_url: str = "http://localhost:5173"
     feedback_token_secret: str = "change-me-in-production"
+    # If set, emails use this URL as the feedback form link (e.g. Microsoft Form). Else use feedback_base_url + token.
+    feedback_form_url: str = "https://forms.microsoft.com/Pages/ResponsePage.aspx?id=jYTYZrYmR0GBJBJ2JNezpjvgLcrzdz5Ho8BB_cWcQOBURVlJR0lBR0lDSVFBSjJLUDc0WlpBS0JIWS4u"
 
     admin_username: str = "admin"
     admin_password: str = "changeme"

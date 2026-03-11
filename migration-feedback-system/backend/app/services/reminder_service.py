@@ -25,7 +25,11 @@ def send_pending_reminders():
         )
 
         for fb_req in pending:
-            feedback_link = f"{settings.feedback_base_url}/feedback?token={fb_req.token}"
+            feedback_link = (
+                settings.feedback_form_url.strip()
+                if settings.feedback_form_url.strip()
+                else f"{settings.feedback_base_url}/feedback?token={fb_req.token}"
+            )
             try:
                 send_reminder_email(fb_req.customer_email, feedback_link)
                 fb_req.reminder_sent = True

@@ -126,7 +126,11 @@ async def zoom_webhook(request: Request):
                 db.flush()
 
                 token = _generate_feedback_token()
-                feedback_link = f"{settings.feedback_base_url}/feedback?token={token}"
+                feedback_link = (
+                    settings.feedback_form_url.strip()
+                    if settings.feedback_form_url.strip()
+                    else f"{settings.feedback_base_url}/feedback?token={token}"
+                )
                 fb_request = FeedbackRequest(
                     meeting_id=meeting.id,
                     customer_email=p_email,
