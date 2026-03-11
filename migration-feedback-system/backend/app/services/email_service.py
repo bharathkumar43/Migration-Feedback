@@ -40,7 +40,7 @@ def _logo_url() -> str:
 
 
 def _build_feedback_html(customer_email: str, host_display_name: str, feedback_link: str) -> str:
-    """Build the HTML email body matching the exact Migration Feedback Form (PDF): logo, * Required, title, intro, all 6 questions, then CTA link."""
+    """Email body: title, intro lines only, then CTA link (questions are on the form they open)."""
     logo = _logo_url()
     return f"""
     <html>
@@ -56,20 +56,6 @@ def _build_feedback_html(customer_email: str, host_display_name: str, feedback_l
           Your feedback helps us enhance our service and better support your migration needs.<br/>
           All information shared will remain confidential.
         </p>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #333; margin-bottom: 24px;">
-          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">1. How would you rate your overall experience? *</td></tr>
-          <tr><td style="padding: 4px 0 12px 0; color: #666;">Extremely dissatisfied &nbsp;&mdash;&nbsp; Extremely satisfied</td></tr>
-          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">2. Did we understand your business requirement properly? *</td></tr>
-          <tr><td style="padding: 4px 0 12px 0; color: #666;">Yes &nbsp;&bull;&nbsp; No &nbsp;&bull;&nbsp; Partially</td></tr>
-          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">3. After today's call, how confident do you feel about the progress of your migration project? *</td></tr>
-          <tr><td style="padding: 4px 0 12px 0; color: #666;">Not Confident &nbsp;&bull;&nbsp; Slightly Confident &nbsp;&bull;&nbsp; Moderately Confident &nbsp;&bull;&nbsp; Confident &nbsp;&bull;&nbsp; Very Confident</td></tr>
-          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">4. How would you rate the clarity and professionalism of our migration engineer during the call? *</td></tr>
-          <tr><td style="padding: 4px 0 12px 0; color: #666;">Enter your answer</td></tr>
-          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">5. Is there anything we could improve or any additional support you require? *</td></tr>
-          <tr><td style="padding: 4px 0 12px 0; color: #666;">Enter your answer</td></tr>
-          <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">6. Was your concern or query addressed effectively during the call?</td></tr>
-          <tr><td style="padding: 4px 0 12px 0; color: #666;">Yes, fully resolved &nbsp;&bull;&nbsp; Partially resolved &nbsp;&bull;&nbsp; Not resolved</td></tr>
-        </table>
         <p style="font-size: 15px; color: #333; margin-bottom: 16px;">Please click the link below to open the form and submit your feedback.</p>
         <p style="margin-bottom: 24px;">
           <a href="{feedback_link}" style="font-size: 15px; color: #1155cc; text-decoration: underline;">Open Migration Feedback Form</a>
